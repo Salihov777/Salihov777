@@ -3,12 +3,12 @@ Description=Telegram Bot
 After=network.target
 
 [Service]
-User=salihovbot
-Group=salihovbot
+User=salihovm
+Group=salihovm
 
-WorkingDirectory=/home/salihovbot/Salihov777/
-Environment="PYTHONPATH=/home/salihovbot/Salihov777/"
-ExecStart=/home/salihovbot/Salihov777/.myvenv/bin/python /home/salihovbot/Salihov777/bot.py
+WorkingDirectory=/home/salihovm/Salihov777/
+Environment="PYTHONPATH=/home/salihovm/Salihov777/"
+ExecStart=/home/salihovm/Salihov777/.myvenv/bin/python /home/salihovm/Salihov777/bot.py
 
 [Install]
 WantedBy=multi-user.target
