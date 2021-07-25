@@ -2,19 +2,19 @@ import logging
 from aiogram import Bot, Dispatcher, executor, types
 from ConfigPiton import ApiOWM, TokenTwo  # не забудь поменять токены
 import aiogram.utils.markdown as fmt
-import requests
+import aiohttp
 import datetime
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 
-# Configure logging               Настроить ведение журнала
+# Настроить ведение журнала
 logging.basicConfig(level=logging.INFO)
 
-# Initialize bot and dispatcher   Инициализировать бота и диспетчера
+# Инициализировать бота и диспетчера
 bot = Bot(token=TokenTwo)  # не забудь поменять токены
 storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)  
+dp = Dispatcher(bot, storage=storage)
 
 
 @dp.message_handler(commands=['start', 'старт'], commands_prefix='!/')
@@ -32,7 +32,7 @@ async def send_welcome(message: types.Message):
 
 @dp.message_handler(commands="specbuttons")
 async def cmd_special_buttons(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # , one_time_keyboard=True)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(types.KeyboardButton(text="Запросить геолокацию 🗺️", request_location=True,
                                       reply_markup=types.ReplyKeyboardRemove()))
     keyboard.add(types.KeyboardButton(text="Запросить контакт ☎️", request_contact=True,
@@ -56,7 +56,7 @@ async def cmd_inline_url(message: types.Message):
 async def echo_document(message: types.Message):
     await message.reply_animation(message.animation.file_id)
 
-    
+
 # Класс для FMS
 class FindWeather(StatesGroup):
     city = State()
@@ -75,14 +75,14 @@ async def cmd_start(message: types.Message):
 async def process_name(message: types.Message, state: FSMContext):
     city = message.text  # полученное название
     await message.answer(
-        get_weather(city)  # передаем в функцию
+        await get_weather(city)  # передаем в функцию
     )
     # Finish conversation
     await state.finish()
 
 
 '''Вот функция , чтобы узнать погоду'''
-def get_weather(city):
+async def get_weather(city):
     code_to_smile = {
         "Clear": "Ясно \U00002600",
         "Clouds": "Облачно \U00002601",
@@ -93,10 +93,14 @@ def get_weather(city):
         "Mist": "Туман \U0001F32B"
     }
     try:
-        r = requests.get(
-            f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={ApiOWM}&units=metric"
-        )
-        data = r.json()
+        async with aiohttp.ClientSession() as session :
+            params = {city: 'city', 'ApiOWM': ApiOWM}
+            async with session.get(
+                f"https://api.openweathermap.org/data/2.5/weather?q={city}&lang=ru&units=metric&appid={ApiOWM}",params=params) as resp:
+                dataInfo = await resp.json()
+
+
+        data = dataInfo
 
         city = data["name"]
         cur_weather = data["main"]["temp"]
@@ -153,7 +157,7 @@ async def process_name(message: types.Message, state: FSMContext):
 @dp.message_handler()
 async def echo(message: types.Message):
     # обрабатывать все текстовые сообщения в чате
-    await message.answer(message.text)  # , reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(message.text)
 
 
 # Последний шаг: запустите длинный опрос.  '''
